@@ -45,7 +45,6 @@ const getStats = async (req, res) => {
 
 const getDealers = async (req, res) => {
   try {
-    // Only return approved dealers for booking
     const dealers = await User.find({ role: 'dealer', dealerStatus: 'approved' }).select('-password');
     res.json(dealers);
   } catch (err) {
@@ -53,7 +52,16 @@ const getDealers = async (req, res) => {
   }
 };
 
-const approveDealер = async (req, res) => {
+const getPendingDealers = async (req, res) => {
+  try {
+    const dealers = await User.find({ role: 'dealer', dealerStatus: 'pending' }).select('-password');
+    res.json(dealers);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+const approveDealer = async (req, res) => {
   try {
     const user = await User.findByIdAndUpdate(
       req.params.id,
@@ -74,15 +82,6 @@ const rejectDealer = async (req, res) => {
       { new: true }
     ).select('-password');
     res.json(user);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-};
-
-const getPendingDealers = async (req, res) => {
-  try {
-    const dealers = await User.find({ role: 'dealer', dealerStatus: 'pending' }).select('-password');
-    res.json(dealers);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
