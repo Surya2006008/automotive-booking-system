@@ -5,21 +5,60 @@ import { useAuth } from '../context/AuthContext';
 
 const Register = () => {
   const [form, setForm] = useState({ name: '', email: '', password: '', role: 'customer', phone: '' });
+  const [dealerForm, setDealerForm] = useState({ shopName: '', shopAddress: '' });
+  const [shopImages, setShopImages] = useState([]);
+  const [locationQuery, setLocationQuery] = useState('');
+  const [locationResults, setLocationResults] = useState([]);
+  const [selectedLocation, setSelectedLocation] = useState(null);
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
+
+  const searchLocation = async (query) => {
+    if (query.length < 3) return;
+    try {
+      const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5`);
+      const data = await res.json();
+      setLocationResults(data);
+    } catch (e) {
+      console.log('Location search error:', e);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setLoading(true);
     try {
-      const { data } = await axiosInstance.post('/auth/register', form);
-      login(data);
-      if (data.role === 'customer') navigate('/customer/dashboard');
-      else if (data.role === 'dealer') navigate('/dealer/dashboard');
-      else navigate('/admin/dashboard');
+      if (form.role === 'dealer') {
+        const formData = new FormData();
+        formData.append('name', form.name);
+        formData.append('email', form.email);
+        formData.append('password', form.password);
+        formData.append('phone', form.phone);
+        formData.append('role', 'dealer');
+        formData.append('shopName', dealerForm.shopName);
+        formData.append('shopAddress', dealerForm.shopAddress);
+        if (selectedLocation) {
+          formData.append('shopLocation', JSON.stringify({ lat: selectedLocation.lat, lng: selectedLocation.lon }));
+        }
+        shopImages.forEach(img => formData.append('shopImages', img));
+
+        const { data } = await axiosInstance.post('/auth/register', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
+        login(data);
+        navigate('/pending-approval');
+      } else {
+        const { data } = await axiosInstance.post('/auth/register', form);
+        login(data);
+        navigate('/customer/dashboard');
+      }
     } catch (err) {
       setError(err.response?.data?.message || 'Registration failed');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -35,7 +74,6 @@ const Register = () => {
   return (
     <div style={{ position: 'relative', width: '100vw', height: '100vh', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet" />
-
       <video autoPlay muted loop playsInline style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover', zIndex: 0 }}>
         <source src="/bg.mp4" type="video/mp4" />
       </video>
@@ -82,7 +120,7 @@ const Register = () => {
             </div>
           ))}
 
-          <div style={{ marginBottom: '24px' }}>
+          <div style={{ marginBottom: '14px' }}>
             <select value={form.role} onChange={e => setForm({ ...form, role: e.target.value })}
               style={{ ...inputStyle, cursor: 'pointer' }}
               onFocus={e => e.target.style.borderColor = 'rgba(255,140,0,0.7)'}
@@ -92,16 +130,79 @@ const Register = () => {
             </select>
           </div>
 
-          <button type="submit" style={{
+          {/* Dealer Extra Fields */}
+          {form.role === 'dealer' && (
+            <div style={{ marginTop: '8px', padding: '16px', background: 'rgba(255,140,0,0.06)', borderRadius: '10px', border: '1px solid rgba(255,140,0,0.2)', marginBottom: '14px' }}>
+              <p style={{ color: '#ff8c00', fontSize: '13px', marginBottom: '12px', fontWeight: 600 }}>🏪 Dealership Details</p>
+
+              <div style={{ marginBottom: '12px' }}>
+                <input type="text" placeholder="Shop Name" value={dealerForm.shopName}
+                  onChange={e => setDealerForm({ ...dealerForm, shopName: e.target.value })}
+                  required style={inputStyle}
+                  onFocus={e => e.target.style.borderColor = 'rgba(255,140,0,0.7)'}
+                  onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.12)'} />
+              </div>
+
+              <div style={{ marginBottom: '12px' }}>
+                <input type="text" placeholder="Shop Address" value={dealerForm.shopAddress}
+                  onChange={e => setDealerForm({ ...dealerForm, shopAddress: e.target.value })}
+                  required style={inputStyle}
+                  onFocus={e => e.target.style.borderColor = 'rgba(255,140,0,0.7)'}
+                  onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.12)'} />
+              </div>
+
+              {/* Location Search */}
+              <div style={{ marginBottom: '12px', position: 'relative' }}>
+                <input type="text" placeholder="Search location (e.g. Hyderabad)" value={locationQuery}
+                  onChange={e => { setLocationQuery(e.target.value); searchLocation(e.target.value); }}
+                  style={inputStyle}
+                  onFocus={e => e.target.style.borderColor = 'rgba(255,140,0,0.7)'}
+                  onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.12)'} />
+                {locationResults.length > 0 && (
+                  <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: '#1a1a1a', border: '1px solid rgba(255,140,0,0.3)', borderRadius: '8px', zIndex: 10, maxHeight: '160px', overflowY: 'auto' }}>
+                    {locationResults.map((r, i) => (
+                      <div key={i} onClick={() => { setSelectedLocation(r); setLocationQuery(r.display_name); setLocationResults([]); }}
+                        style={{ padding: '10px 14px', color: '#fff', fontSize: '12px', cursor: 'pointer', borderBottom: '1px solid rgba(255,255,255,0.05)' }}
+                        onMouseEnter={e => e.target.style.background = 'rgba(255,140,0,0.15)'}
+                        onMouseLeave={e => e.target.style.background = 'transparent'}>
+                        {r.display_name}
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {selectedLocation && (
+                  <p style={{ color: '#4caf50', fontSize: '11px', marginTop: '4px' }}>✅ Location selected</p>
+                )}
+              </div>
+
+              {/* Shop Images */}
+              <div>
+                <label style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px', marginBottom: '6px', display: 'block' }}>
+                  Shop Photos (up to 5)
+                </label>
+                <input type="file" accept="image/*" multiple
+                  onChange={e => setShopImages(Array.from(e.target.files).slice(0, 5))}
+                  style={{ ...inputStyle, padding: '8px' }} />
+                {shopImages.length > 0 && (
+                  <p style={{ color: '#ff8c00', fontSize: '11px', marginTop: '4px' }}>
+                    {shopImages.length} photo(s) selected
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+
+          <button type="submit" disabled={loading} style={{
             width: '100%', padding: '14px',
-            background: 'transparent', border: '2px solid #ff8c00',
+            background: loading ? 'rgba(255,140,0,0.3)' : 'transparent',
+            border: '2px solid #ff8c00',
             borderRadius: '10px', color: '#ff8c00',
             fontWeight: 700, fontSize: '16px', fontFamily: "'Outfit', sans-serif",
-            cursor: 'pointer', letterSpacing: '0.5px', transition: 'all 0.2s',
+            cursor: loading ? 'not-allowed' : 'pointer', letterSpacing: '0.5px', transition: 'all 0.2s',
           }}
-            onMouseEnter={e => { e.target.style.background = '#ff8c00'; e.target.style.color = '#000'; }}
-            onMouseLeave={e => { e.target.style.background = 'transparent'; e.target.style.color = '#ff8c00'; }}>
-            Create Account
+            onMouseEnter={e => { if (!loading) { e.target.style.background = '#ff8c00'; e.target.style.color = '#000'; } }}
+            onMouseLeave={e => { if (!loading) { e.target.style.background = 'transparent'; e.target.style.color = '#ff8c00'; } }}>
+            {loading ? 'Submitting...' : 'Create Account'}
           </button>
         </form>
 

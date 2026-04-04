@@ -6,6 +6,7 @@ const AdminDashboard = () => {
   const [stats, setStats] = useState({});
   const [users, setUsers] = useState([]);
   const [appointments, setAppointments] = useState([]);
+  const [pendingDealers, setPendingDealers] = useState([]);
   const [view, setView] = useState('users');
   const [msg, setMsg] = useState('');
 
@@ -13,6 +14,7 @@ const AdminDashboard = () => {
     axiosInstance.get('/admin/stats').then(({ data }) => setStats(data));
     axiosInstance.get('/admin/users').then(({ data }) => setUsers(data));
     axiosInstance.get('/admin/appointments').then(({ data }) => setAppointments(data));
+    axiosInstance.get('/admin/dealers/pending').then(({ data }) => setPendingDealers(data));
   }, []);
 
   const handleDelete = async (id) => {
@@ -20,6 +22,18 @@ const AdminDashboard = () => {
     await axiosInstance.delete(`/admin/users/${id}`);
     setUsers(users.filter(u => u._id !== id));
     setMsg('User deleted.');
+  };
+
+  const handleApprove = async (dealer) => {
+    await axiosInstance.put(`/admin/dealers/${dealer._id}/approve`);
+    setPendingDealers(pendingDealers.filter(d => d._id !== dealer._id));
+    setMsg(`${dealer.name} approved!`);
+  };
+
+  const handleReject = async (dealer) => {
+    await axiosInstance.put(`/admin/dealers/${dealer._id}/reject`);
+    setPendingDealers(pendingDealers.filter(d => d._id !== dealer._id));
+    setMsg(`${dealer.name} rejected.`);
   };
 
   return (
@@ -49,6 +63,11 @@ const AdminDashboard = () => {
             onClick={() => setView('users')}>Users</button>
           <button className={`btn btn-sm ${view === 'appointments' ? 'btn-dark' : 'btn-outline-dark'}`}
             onClick={() => setView('appointments')}>Appointments</button>
+          <button className={`btn btn-sm ${view === 'dealers' ? 'btn-dark' : 'btn-outline-dark'}`}
+            onClick={() => setView('dealers')}>
+            Dealer Requests{pendingDealers.length > 0 &&
+              <span className="badge bg-danger ms-1">{pendingDealers.length}</span>}
+          </button>
         </div>
 
         {msg && <div className="alert alert-info">{msg}</div>}
@@ -98,6 +117,42 @@ const AdminDashboard = () => {
                 ))}
               </tbody>
             </table>
+          </div>
+        )}
+
+        {view === 'dealers' && (
+          <div>
+            {pendingDealers.length === 0 ? (
+              <div className="alert alert-secondary">No pending dealer requests.</div>
+            ) : (
+              pendingDealers.map(dealer => (
+                <div key={dealer._id} className="card mb-3 p-3 border-warning">
+                  <div className="d-flex justify-content-between align-items-start mb-2">
+                    <div>
+                      <h6 className="mb-0 fw-bold">{dealer.shopName}</h6>
+                      <small className="text-muted">Owner: {dealer.name}</small>
+                    </div>
+                    <span className="badge bg-warning text-dark">Pending</span>
+                  </div>
+                  <p className="text-muted small mb-1">📧 {dealer.email} &nbsp;|&nbsp; 📞 {dealer.phone}</p>
+                  <p className="text-muted small mb-2">📍 {dealer.shopAddress}</p>
+                  {dealer.shopImages?.length > 0 && (
+                    <div className="d-flex gap-2 flex-wrap mb-3">
+                      {dealer.shopImages.map((img, i) => (
+                        <img key={i} src={img} alt="shop"
+                          style={{ width: '100px', height: '80px', objectFit: 'cover', borderRadius: '6px', border: '1px solid #dee2e6' }} />
+                      ))}
+                    </div>
+                  )}
+                  <div className="d-flex gap-2">
+                    <button className="btn btn-sm btn-success"
+                      onClick={() => handleApprove(dealer)}>✅ Approve</button>
+                    <button className="btn btn-sm btn-danger"
+                      onClick={() => handleReject(dealer)}>❌ Reject</button>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         )}
       </div>

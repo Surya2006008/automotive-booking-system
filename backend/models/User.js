@@ -7,6 +7,15 @@ const userSchema = new mongoose.Schema({
   password: { type: String, required: true },
   role:     { type: String, enum: ['customer', 'dealer', 'admin'], default: 'customer' },
   phone:    { type: String },
+  // Dealer specific fields
+  shopName:     { type: String },
+  shopAddress:  { type: String },
+  shopLocation: {
+    lat: { type: Number },
+    lng: { type: Number },
+  },
+  shopImages:   [{ type: String }],
+  dealerStatus: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' },
 }, { timestamps: true });
 
 userSchema.pre('save', async function () {
