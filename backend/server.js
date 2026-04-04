@@ -10,24 +10,19 @@ const app = express();
 
 
 app.use(cors({
-  origin: [
-    'https://automotive-booking-system.vercel.app',
-    'https://automotive-booking-system-81t0hgf7c-surya2006008s-projects.vercel.app'
-  ],
+  origin: function (origin, callback) {
+    if (!origin) return callback(null, true);
+    if (
+      origin === 'https://automotive-booking-system.vercel.app' ||
+      origin.endsWith('.vercel.app')
+    ) {
+      return callback(null, true);
+    }
+    callback(new Error('Not allowed by CORS'));
+  },
   methods: ["GET", "POST", "PUT", "DELETE"],
   credentials: true
 }));
-// app.use(cors({
-//   origin: 'https://automotive-booking-system.vercel.app/', // ← your actual Vercel URL
-//   methods: ["GET", "POST", "PUT", "DELETE"],
-//   credentials: true
-// }));
-// // ✅ Proper CORS (single config)
-// app.use(cors({
-//   origin: '*',
-//   methods: ["GET", "POST", "PUT", "DELETE"],
-//   credentials: true
-// }));
 
 app.use(express.json());
 
