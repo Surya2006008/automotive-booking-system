@@ -1,26 +1,13 @@
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
-const nodemailer = require('nodemailer');
 
-const generateToken = (id) =>
-  jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '7d' });
+
+const { Resend } = require('resend');
 
 const sendAdminEmail = async (dealer) => {
-  const transporter = nodemailer.createTransport({
-    host: 'smtp.gmail.com',
-    port: 587,
-    secure: false,
-    auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS,
-    },
-    tls: {
-      rejectUnauthorized: false
-    }
-  });
-
-  await transporter.sendMail({
-    from: process.env.EMAIL_USER,
+  const resend = new Resend(process.env.RESEND_API_KEY);
+  await resend.emails.send({
+    from: 'onboarding@resend.dev',
     to: process.env.EMAIL_USER,
     subject: '🚗 New Dealer Registration - SpeedServe',
     html: `
