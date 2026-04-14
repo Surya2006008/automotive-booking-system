@@ -22,22 +22,24 @@ const getAllAppointments = async (req, res) => {
   }
 };
 
+const mongoose = require('mongoose');
+const User = require('../models/User');
+const Appointment = require('../models/Appointment');
+
 const deleteUser = async (req, res) => {
   try {
     const userId = req.params.id;
 
-    // delete user
     const user = await User.findByIdAndDelete(userId);
 
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // delete all related appointments (IMPORTANT FIX)
     await Appointment.deleteMany({
       $or: [
-        { customer: userId },
-        { dealer: userId }
+        { customer: new mongoose.Types.ObjectId(userId) },
+        { dealer: new mongoose.Types.ObjectId(userId) }
       ]
     });
 
