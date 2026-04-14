@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const User = require('../models/User');
 const Appointment = require('../models/Appointment');
 
@@ -21,10 +22,6 @@ const getAllAppointments = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
-
-const mongoose = require('mongoose');
-const User = require('../models/User');
-const Appointment = require('../models/Appointment');
 
 const deleteUser = async (req, res) => {
   try {
@@ -87,6 +84,7 @@ const approveDealer = async (req, res) => {
       { dealerStatus: 'approved' },
       { new: true }
     ).select('-password');
+
     res.json(user);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -100,10 +98,20 @@ const rejectDealer = async (req, res) => {
       { dealerStatus: 'rejected' },
       { new: true }
     ).select('-password');
+
     res.json(user);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 };
 
-module.exports = { getAllUsers, getAllAppointments, deleteUser, getStats, getDealers, getPendingDealers, approveDealer, rejectDealer };
+module.exports = {
+  getAllUsers,
+  getAllAppointments,
+  deleteUser,
+  getStats,
+  getDealers,
+  getPendingDealers,
+  approveDealer,
+  rejectDealer
+};
