@@ -10,21 +10,13 @@ const app = express();
 
 
 app.use(cors({
-  origin: function (origin, callback) {
-    if (!origin) return callback(null, true);
-
-    if (
-      origin === 'https://automotive-booking-system.vercel.app' ||
-      origin.endsWith('.vercel.app')
-    ) {
-      return callback(null, true);
-    }
-
-    callback(null, true); // (temporary safe fix)
-  },
-  methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
-  credentials: true
+  origin: true,
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  credentials: true,
+  allowedHeaders: ["Content-Type", "Authorization"]
 }));
+
+app.options("*", cors());
 
 app.use(express.json());
 
