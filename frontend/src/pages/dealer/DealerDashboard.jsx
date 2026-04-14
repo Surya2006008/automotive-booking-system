@@ -21,7 +21,7 @@ const DealerDashboard = () => {
 
   const handleStatusChange = async (id, status) => {
   try {
-    await axiosInstance.patch(`/appointments/${id}`, { status });
+    await axiosInstance.patch(`/appointments/${id}/status`, { status });
 
     // 🔥 instant UI update
     setAppointments(prev =>
