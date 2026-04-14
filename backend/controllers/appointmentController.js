@@ -73,13 +73,23 @@ const getDealerAppointments = async (req, res) => {
 
 const updateStatus = async (req, res) => {
   try {
+    console.log("USER:", req.user);
+    console.log("PARAM ID:", req.params.id);
+
     const appointment = await Appointment.findById(req.params.id);
-    if (!appointment) return res.status(404).json({ message: 'Not found' });
+
+    if (!appointment) {
+      return res.status(404).json({ message: "Appointment not found" });
+    }
+
     appointment.status = req.body.status;
     await appointment.save();
+
     res.json(appointment);
+
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.log(err);
+    res.status(500).json({ message: "Server error" });
   }
 };
 

@@ -20,14 +20,21 @@ const DealerDashboard = () => {
   useEffect(() => { fetchAppointments(); }, []);
 
   const handleStatusChange = async (id, status) => {
-    try {
-      await axiosInstance.patch(`/appointments/${id}/status`, { status });
-      setMsg(`Status updated to "${status}"`);
-      fetchAppointments();
-    } catch (err) {
-      setMsg('Update failed');
-    }
-  };
+  try {
+    await axiosInstance.patch(`/appointments/${id}`, { status });
+
+    // 🔥 instant UI update
+    setAppointments(prev =>
+      prev.map(a =>
+        a._id === id ? { ...a, status } : a
+      )
+    );
+
+    setMsg(`Status updated to "${status}"`);
+  } catch (err) {
+    setMsg('Update failed');
+  }
+};
 
   return (
     <>
