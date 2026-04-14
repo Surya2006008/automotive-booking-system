@@ -24,8 +24,25 @@ const getAllAppointments = async (req, res) => {
 
 const deleteUser = async (req, res) => {
   try {
-    await User.findByIdAndDelete(req.params.id);
-    res.json({ message: 'User deleted' });
+    const userId = req.params.id;
+
+    // delete user
+    const user = await User.findByIdAndDelete(userId);
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // delete all related appointments (IMPORTANT FIX)
+    await Appointment.deleteMany({
+      $or: [
+        { customer: userId },
+        { dealer: userId }
+      ]
+    });
+
+    res.json({ message: "User and related appointments deleted successfully" });
+
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
